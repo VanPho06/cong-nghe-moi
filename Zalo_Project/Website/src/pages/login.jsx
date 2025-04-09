@@ -1,38 +1,37 @@
-import  { useState } from 'react';
+import { useState } from 'react';
 import { Lock, QrCode } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 
-const LoginPage = () => {
+const LoginPage = ({ onLoginSuccess }) => {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [password, setPassword] = useState('');
-    const [message,setMessage] = useState('')
+    const [message, setMessage] = useState('')
     const navigate = useNavigate();
-    const handleLogin = async() =>{
-        if(!phoneNumber || !password)
-        {
-        setMessage('Vui lòng nhập đầy đủ thông tin');
-        return;
+    const handleLogin = async () => {
+        if (!phoneNumber || !password) {
+            setMessage('Vui lòng nhập đầy đủ thông tin');
+            return;
         }
         try {
-            const response = await fetch('http://localhost:3000/login',{
-            method:'POST',
-            headers: {'Content-Type': 'application/json'},
-            body:JSON.stringify({phoneNumber,password})
-            
+            const response = await fetch('http://localhost:3000/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phoneNumber, password })
+
             });
             const data = await response.json();
-            
-            if(response.ok)
-            {
+
+            if (response.ok) {
+                onLoginSuccess(data.user.phoneNumber);
                 navigate('/')
-            } else{
-                setMessage(data.error || 'Đăng nhập thất bài!'  );
+            } else {
+                setMessage(data.error || 'Đăng nhập thất bài!');
             }
         } catch (error) {
             setMessage('Lỗi kết nối: ' + error.message);
         }
-        
+
     };
 
     return (
@@ -86,7 +85,7 @@ const LoginPage = () => {
 
                     <button
                         className="w-full bg-blue-400 text-white py-2 rounded-md text-sm hover:bg-blue-500 transition duration-300"
-                    onClick={handleLogin}
+                        onClick={handleLogin}
                     >
                         Đăng nhập với mật khẩu
                     </button>

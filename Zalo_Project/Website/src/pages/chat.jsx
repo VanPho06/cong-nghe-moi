@@ -2,12 +2,50 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, Settings, MessageCircle, Cloud, Home, Image, Paperclip, Send, Smile, Users, UserPlus, Video, Contact } from 'lucide-react';
 import ContactItem from '../components/ContactItem';
 import MessageComponent from '../components/MessageItem';
+import UserProfile from '../components/UserProfile';
 
-const ChatPage = () => {
+const ChatPage = ({ userId, onLogout }) => {
     const [message, setMessage] = useState('');
     const [selectedContact, setSelectedContact] = useState(null);
-    const [userId, setUserId] = useState(1);
+    const [showProfile, setShowProfile] = useState(false);
+    const [userInfo, setUserInfo] = useState({
+        phoneNumber: '',
+        fullName: '',
+        img: ''
+    });
     const messagesEndRef = useRef(null);
+
+    useEffect(() => {
+        const fetchUserInfo = async () => {
+            try {
+                const response = await fetch(`http://localhost:3000/user/${userId}`);
+                const data = await response.json();
+                if (response.ok) {
+                    setUserInfo({
+                        phoneNumber: data.phoneNumber,
+                        fullName: data.fullName,
+                        img: data.img
+                    });
+                }
+            } catch (error) {
+                console.error('Lỗi khi lấy thông tin người dùng:', error);
+            }
+        };
+
+        fetchUserInfo();
+    }, [userId]);
+
+    const handleLogout = async () => {
+        try {
+            onLogout();
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
+    };
+
+    const handleAvatarClick = () => {
+        setShowProfile(true);
+    };
 
     const testexample = Array(100).fill().map((_, i) => ({
         id: i,
@@ -26,6 +64,14 @@ const ChatPage = () => {
         setSelectedContact(contact);
     };
 
+    const onProfileUpdated = (updatedInfo) => {
+        setUserInfo((prevInfo) => ({
+            ...prevInfo,
+            ...updatedInfo,
+        }))
+    };
+
+
     useEffect(() => {
         if (messagesEndRef.current) {
             messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -37,7 +83,24 @@ const ChatPage = () => {
             {/* Left Sidebar - Navigation */}
             <div className="w-16 bg-blue-600 flex flex-col items-center py-4 text-white pt-[32px] pb-[12px] justify-between">
                 <div className="flex flex-col items-center">
-                    <div className="w-12 h-12 bg-white rounded-full mb-6" />
+                    <div
+                        className="w-12 h-12 rounded-full mb-6 cursor-pointer overflow-hidden"
+                        onClick={handleAvatarClick}
+                    >
+                        {userInfo.img ? (
+                            <img
+                                src={userInfo.img}
+                                alt="Avatar"
+                                className="w-full h-full object-cover"
+                            />
+                        ) : (
+                            <div className="w-full h-full bg-blue-400 flex items-center justify-center">
+                                <span className="text-white text-lg font-medium">
+                                    {userInfo.fullName ? userInfo.fullName.charAt(0).toUpperCase() : 'U'}
+                                </span>
+                            </div>
+                        )}
+                    </div>
                     <button className="hover:bg-blue-700 m-1 rounded"><MessageCircle className='m-2' size={29} /></button>
                     <button className="hover:bg-blue-700 m-1 rounded"><Contact className='m-2' size={29} /></button>
                 </div>
@@ -83,7 +146,7 @@ const ChatPage = () => {
             <div className="flex-1 flex flex-col">
                 {selectedContact ? (
                     <>
-                    
+
                         {/* Chat Header */}
                         <div className="border-b bg-white flex items-center py-3 px-4 justify-between">
                             <div className="flex items-center">
@@ -103,18 +166,15 @@ const ChatPage = () => {
                         {/* Messages Area */}
                         <div className="flex-1 p-4 overflow-y-auto">
                             {selectedContact.messages.map((msg) => (
-                                <div className="flex-1 p-4 overflow-y-auto">
-                                    {selectedContact.messages.map((msg) => (
-                                        <MessageComponent
-                                            key={msg.id}
-                                            message={msg}
-                                            isSentByUser={msg.from === userId}
-                                        />
-                                    ))}
-                                </div>
+                                <MessageComponent
+                                    key={msg.id}
+                                    message={msg}
+                                    isSentByUser={msg.from === userId}
+                                />
                             ))}
                             <div ref={messagesEndRef} />
                         </div>
+
 
                         {/* Input Area */}
                         <div className="border-t bg-white">
@@ -148,6 +208,14 @@ const ChatPage = () => {
                     </div>
                 )}
             </div>
+
+            {showProfile && (
+                <UserProfile
+                    user={userInfo}
+                    onClose={() => setShowProfile(false)}
+                    onUpdate={onProfileUpdated}
+                />
+            )}
         </div>
     );
 };
